@@ -2,44 +2,98 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <stdlib.h>
 
 #include "tokenizer.h"
+#include "utility.h"
 
-void print_ut(std::vector<token>& tok) {
-	for (int i = 0; i < tok.size(); i++) {
-		if (tok[i].type == token_enum::RETURN)
-			std::cout << "ret" << " : " << tok[i].value << std::endl;
+std::string tokensToAsm(std::vector<Token> tokens) {
+	std::stringstream assembly("");
+	assembly << "global _start\n_start:\n";
 
-		else if (tok[i].type == token_enum::INT_LITERAL)
-			std::cout << "int_lit" << " : " << tok[i].value << std::endl;
+	for (int i = 0; i < tokens.size(); i++) {
+		if (tokens[i].type == Token_Enum::EXIT) {
+			assembly << "	mov rax, 60\n";
 
-		else if (tok[i].type == token_enum::SEMICOLON)
-			std::cout << "semi" << " : " << tok[i].value << std::endl;
-		else if (tok[i].type == token_enum::NONE)
-			std::cout << "none" << " : " << tok[i].value << std::endl;
+			i++;
+			if (i < tokens.size() && tokens[i].type == Token_Enum::INT_LITERAL) {
+				assembly << "	mov rdi, " << tokens[i].value << "\n";
+				
+				i++;
+				if (i < tokens.size() && tokens[i].type == Token_Enum::SEMICOLON) {
+					assembly << "	syscall\n";
+				}
+			}
+		}
 	}
+
+	return assembly.str();
 }
 
 int main(int argc, char* argv[]) {
-	if (argc == 2)
-		std::cout << "Compiling " << argv[1] << std::endl;
-	else {
-		std::cout << "Invalid arguments! Proper usage: ./lapis.out {filename.lps}" << std::endl;
+	std::string sourceFile = "";
+	std::string outputFile = "";
+	
+	/* Get the source and output arguments */
+	if (argc == 5) {
+		std::string argument;
+		for (int i = 1; i < argc; i++) {
+			argument = argv[i];
+
+			if (argument == "-s") {
+				if (i + 1 < argc) {
+					argument = argv[i + 1];
+					sourceFile = argument;
+				}
+			} else if (argument == "-o") {
+				if (i + 1 < argc) {
+					argument = argv[i + 1];
+					outputFile = argument;
+				}
+			}
+		}
+
+		std::cout << "Compiling " << sourceFile << " to " << outputFile << std::endl;
+	} else {
+		std::cout << "Invalid arguments! Proper arguments: -s source.lps -o output" << std::endl;
 		return 1;
-	}	
+	}
+
+	/* Read in the source file */
 
 	std::string line;
 	std::stringstream content;
-	std::ifstream file(argv[1]);
+	std::ifstream fileIn(sourceFile);
 
-	while (std::getline(file, line)) {
+	while (std::getline(fileIn, line)) {
 		content << line << "\n";		
 	}
 
-	file.close();
+	fileIn.close();
+
+	/* Tokenize the source and compile it into the assembly file */
+
+	std::stringstream stringbuf;
+	stringbuf << outputFile << ".asm";
 
 	Tokenizer tokenizer;
-	std::vector<token> tokens = tokenizer.tokenize(content.str());
+	std::ofstream fileOut(stringbuf.str());
+	fileOut << tokensToAsm(tokenizer.tokenize(content.str()));
+	fileOut.close();
 
-	print_ut(tokens);
+	/* Assemble the compiled file */
+
+	resetBuffer(stringbuf);
+	stringbuf << "nasm -f elf64 " << outputFile << ".asm";
+	system(stringbuf.str().c_str());
+
+	resetBuffer(stringbuf);
+	stringbuf << "ld -s -o " << outputFile << " " << outputFile << ".o";
+	system(stringbuf.str().c_str());
+
+	resetBuffer(stringbuf);
+	stringbuf << "rm " << outputFile << ".o";
+	system(stringbuf.str().c_str());
+
+	return 0;
 }

@@ -1,0 +1,7 @@
+#Grammar for Lapis programming language
+
+[EXIT] -> exit {EXPR};
+
+[EXPR] -> {INT_LIT}
+
+[INT_LIT] -> NUMBER

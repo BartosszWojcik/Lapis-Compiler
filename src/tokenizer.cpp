@@ -3,44 +3,43 @@
 #include "tokenizer.h"
 #include "utility.h"
 
-void checkForToken(token& tok_ref, std::string word) {
-	tok_ref.type = token_enum::NONE;
-	tok_ref.value = 0;
+void checkForToken(Token& tok_ref, std::string word) {
+	tok_ref.type = Token_Enum::UNKNOWN;
+	tok_ref.value = "";
 
-	if (word == "return") {
-		tok_ref.type = token_enum::RETURN;
+	if (word == "exit") {
+		tok_ref.type = Token_Enum::EXIT;
 	} else {
 		if (isAllDigits(word)) {
-			tok_ref.type = token_enum::INT_LITERAL;
-			tok_ref.value = std::stoi(word);
+			tok_ref.type = Token_Enum::INT_LITERAL;
+			tok_ref.value = word;
 		}
 	}
 }
 
-std::vector <token> Tokenizer::tokenize(std::string source) {
-	std::vector<token> tokens;
+std::vector<Token> Tokenizer::tokenize(std::string source) {
+	std::vector<Token> tokens;
 	std::stringstream words(source);
 	std::stringstream wordbuf("");
 	std::string word;
 
-	token token_temp;
+	Token token_temp;
 
 	while (words >> word) {
-		for (char c : word) {
-			if (c == ';') {
+		for (int i = 0; i < word.size(); i++) {
+			if (word[i] == ';') {
 				if (!wordbuf.str().empty()) {
 					checkForToken(token_temp, wordbuf.str());
 					tokens.push_back(token_temp);
 				}
 
-				token_temp.type = token_enum::SEMICOLON;
-				token_temp.value = 0;
+				token_temp.type = Token_Enum::SEMICOLON;
+				token_temp.value = "";
 				tokens.push_back(token_temp);
 
-				wordbuf.str("");
-				wordbuf.clear();
+				resetBuffer(wordbuf);
 			} else {
-				wordbuf << c;
+				wordbuf << word[i];
 			}
 		}
 
@@ -49,8 +48,7 @@ std::vector <token> Tokenizer::tokenize(std::string source) {
 			tokens.push_back(token_temp);
 		}
 
-		wordbuf.str("");
-		wordbuf.clear();
+		resetBuffer(wordbuf);
 	}
 
 	return tokens;

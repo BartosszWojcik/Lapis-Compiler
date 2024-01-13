@@ -10,8 +10,8 @@ bool isAllDigits(std::string& str) {
 }
 
 bool isAllAplhaNumeric(std::string& str) {
-	for (char c : str) {
-		if (!isalnum(c))
+	for (int i = 0; i < str.size(); i++) {
+		if (!isalnum(str[i]))
 			return false;
 	}
 
@@ -19,8 +19,13 @@ bool isAllAplhaNumeric(std::string& str) {
 }
 
 char lastChar(std::string& str) {
-	if (str.size() > 0)
+	if (!str.empty())
 		return str[str.size() - 1];	
 	else 
 		return 0;
+}
+
+void resetBuffer(std::stringstream& stringbuf) {
+	stringbuf.str("");
+	stringbuf.clear();
 }
